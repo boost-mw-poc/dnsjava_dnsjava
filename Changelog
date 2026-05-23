@@ -1,3 +1,12 @@
+05/23/2026
+	- 3.6.5 released
+	- Handle canceled keys in UDP client (#129)
+	- Handle interrupts on NIO selector thread (#396, #397)
+	- Fix config option key names in README (@lostnet, #399)
+	- Handle invalid/uninitialized file times in hosts file (#400)
+	- Add getXxxAsByteArray() getters and overload with escape boolean
+	  (@MMauro94, #404, #405)
+
 01/18/2026
 	- 3.6.4 released
 	- Fix Zone-class serialization (#391)
