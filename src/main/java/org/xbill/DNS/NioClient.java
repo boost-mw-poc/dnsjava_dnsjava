@@ -53,7 +53,6 @@ public abstract class NioClient {
   private static Thread closeThread;
   private static volatile Selector selector;
   private static volatile boolean run;
-  private static volatile boolean closeDone;
 
   interface KeyProcessor {
     void processReadyKey(SelectionKey key);
@@ -70,9 +69,9 @@ public abstract class NioClient {
           selectorThread.setDaemon(true);
           selectorThread.setName("dnsjava NIO selector");
           selectorThread.start();
-          closeThread = new Thread(() -> close(true));
-          closeThread.setName("dnsjava NIO shutdown hook");
           if (Boolean.parseBoolean(System.getProperty(REGISTER_SHUTDOWN_HOOK_PROPERTY, "true"))) {
+            closeThread = new Thread(() -> close(true));
+            closeThread.setName("dnsjava NIO shutdown hook");
             Runtime.getRuntime().addShutdownHook(closeThread);
           }
         }
@@ -85,8 +84,6 @@ public abstract class NioClient {
   /**
    * Shutdown the network I/O used by the {@link SimpleResolver}.
    *
-   * @implNote Does not wait until the selector thread has stopped. But users may immediately start
-   *     using the {@link NioClient} again.
    * @since 3.4.0
    */
   public static void close() {
@@ -95,10 +92,17 @@ public abstract class NioClient {
 
   private static void close(boolean fromHook) {
     log.debug("Closing dnsjava NIO selector, fromHook={}", fromHook);
-    run = false;
-    Selector localSelector = selector;
+
+    Selector localSelector;
+    Thread localSelectorThread;
+    synchronized (NIO_CLIENT_LOCK) {
+      run = false;
+      localSelector = selector;
+      localSelectorThread = selectorThread;
+    }
+
     if (localSelector != null) {
-      selector.wakeup();
+      localSelector.wakeup();
     }
 
     if (!fromHook) {
@@ -113,21 +117,15 @@ public abstract class NioClient {
       }
     }
 
-    if (localSelector == null) {
+    if (localSelector == null || localSelectorThread == null) {
       // Prevent hanging when close() was called without starting
       return;
     }
 
-    synchronized (NIO_CLIENT_LOCK) {
-      try {
-        while (!closeDone) {
-          NIO_CLIENT_LOCK.wait();
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      } finally {
-        closeDone = false;
-      }
+    try {
+      localSelectorThread.join();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
     }
   }
 
@@ -162,11 +160,11 @@ public abstract class NioClient {
       }
     }
 
-    runClose();
+    cleanupAfterRun();
     log.debug("dnsjava NIO selector thread stopped");
   }
 
-  private static void runClose() {
+  private static void cleanupAfterRun() {
     try {
       runTasks(CLOSE_TASKS);
     } catch (Exception e) {
@@ -174,15 +172,6 @@ public abstract class NioClient {
     }
 
     Selector localSelector = selector;
-    Thread localSelectorThread = selectorThread;
-    synchronized (NIO_CLIENT_LOCK) {
-      selector = null;
-      selectorThread = null;
-      closeThread = null;
-      closeDone = true;
-      NIO_CLIENT_LOCK.notifyAll();
-    }
-
     if (localSelector != null) {
       try {
         localSelector.close();
@@ -191,12 +180,10 @@ public abstract class NioClient {
       }
     }
 
-    if (localSelectorThread != null) {
-      try {
-        localSelectorThread.join();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+    synchronized (NIO_CLIENT_LOCK) {
+      selector = null;
+      selectorThread = null;
+      closeThread = null;
     }
   }
 
