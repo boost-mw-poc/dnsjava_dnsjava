@@ -14,8 +14,8 @@ import java.util.StringTokenizer;
  *
  * <ul>
  *   <li>BINDTTL - Print TTLs in BIND format
- *   <li>multiline - Print records in multiline format<br>
- *   <li>noPrintIN - Don't print the class of a record if it's IN<br>
+ *   <li>multiline - Print records in multiline format
+ *   <li>noPrintIN - Don't print the class of a record if it's IN
  * </ul>
  *
  * <p>Valued options:

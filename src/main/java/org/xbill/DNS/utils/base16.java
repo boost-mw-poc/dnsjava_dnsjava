@@ -58,6 +58,7 @@ public class base16 {
    * <ul>
    *   <li>when {@code str} is {@code null},
    *   <li>when non-hex digits or non-whitespace characters are encountered.
+   * </ul>
    *
    * @param str A String containing the encoded data.
    * @return An array containing the binary data, or null if the string is invalid.

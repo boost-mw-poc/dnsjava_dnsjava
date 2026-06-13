@@ -22,12 +22,12 @@ import org.xbill.DNS.utils.hexdump;
  * {@code dnsjava} is used in an application container like Tomcat. In a normal JVM setup {@link
  * #close()} is called by a shutdown hook.
  *
- * <p>The following configuration parameter is available:
+ * <p>The following configuration parameters are available:
  *
  * <dl>
- *   <dt>{@value SELECTOR_TIMEOUT_PROPERTY}
+ *   <dt>{@code dnsjava.nio.selector_timeout}
  *   <dd>Set selector timeout in milliseconds. Default/Max 1000, Min 1.
- *   <dt>{@value REGISTER_SHUTDOWN_HOOK_PROPERTY}
+ *   <dt>{@code dnsjava.nio.register_shutdown_hook}
  *   <dd>Register Shutdown Hook termination of NIO. Default True.
  * </dl>
  *

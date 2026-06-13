@@ -25,7 +25,7 @@ import lombok.Getter;
  *
  * @implNote This class uses a {@link java.util.concurrent.locks.ReadWriteLock} to ensure access and
  *     manipulation is safe from multiple threads. Iterators are "weakly consistent" (see the
- *     package info from {@code java.util.concurrent}).
+ *     package info from {@link java.util.concurrent}).
  * @author Brian Wellington
  */
 public class Zone implements Serializable, Iterable<RRset> {

@@ -289,7 +289,19 @@
                     <debug>true</debug>
                     <windowtitle>dnsjava documentation</windowtitle>
                     <footer/>
-                    <doclint>none</doclint>
+                    <doclint>all,-missing</doclint>
+                    <tags>
+                        <tag>
+                            <name>apiNote</name>
+                            <placement>a</placement>
+                            <head>&lt;em&gt;API Note:&lt;/em&gt;</head>
+                        </tag>
+                        <tag>
+                            <name>implNote</name>
+                            <placement>a</placement>
+                            <head>&lt;em&gt;Implementation Note:&lt;/em&gt;</head>
+                        </tag>
+                    </tags>
                     <excludePackageNames>android,android.*,sun.*</excludePackageNames>
                 </configuration>
             </plugin>

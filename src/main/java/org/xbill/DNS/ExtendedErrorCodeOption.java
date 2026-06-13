@@ -42,7 +42,7 @@ public class ExtendedErrorCodeOption extends EDNSOption {
    * The resolver attempted to perform DNSSEC validation, but validation ended in the Indeterminate
    * state.
    *
-   * @see <a href="https://datatracker.ietf.org/doc/html/rfc4035>RFC 4035</a>
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc4035">RFC 4035</a>
    */
   public static final int DNSSEC_INDETERMINATE = 5;
 

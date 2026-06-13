@@ -37,8 +37,11 @@ import lombok.extern.slf4j.Slf4j;
  * <a href="https://bugs.openjdk.java.net/browse/JDK-8225647">issues</a> with connection handling.
  *
  * <p>As of 2020-09-13, the following limits of public resolvers for HTTP/2 were observed:
- * <li>https://cloudflare-dns.com/dns-query: max streams=250, idle timeout=400s
- * <li>https://dns.google/dns-query: max streams=100, idle timeout=240s
+ *
+ * <ul>
+ *   <li>https://cloudflare-dns.com/dns-query: max streams=250, idle timeout=400s
+ *   <li>https://dns.google/dns-query: max streams=100, idle timeout=240s *
+ * </ul>
  *
  * @since 3.0
  */
