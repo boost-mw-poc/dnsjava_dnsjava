@@ -49,6 +49,12 @@ public class TSIG {
   public static final Name HMAC_MD5 = Name.fromConstantString("HMAC-MD5.SIG-ALG.REG.INT.");
 
   /**
+   * Alias for {@link TSIG#HMAC_MD5} to align with the newer algorithm names. Private as this is not
+   * an official name.
+   */
+  private static final Name HMAC_MD5_ALIAS = Name.fromConstantString("hmac-md5.");
+
+  /**
    * The domain name representing the HMAC-MD5 algorithm.
    *
    * @see <a href="https://datatracker.ietf.org/doc/html/rfc8945">RFC 8945</a>
@@ -187,7 +193,7 @@ public class TSIG {
     }
 
     // Special case, allow "hmac-md5" as an alias for the RFC name.
-    if (nameAlg.equals(Name.fromConstantString("hmac-md5."))) {
+    if (nameAlg.equals(HMAC_MD5_ALIAS)) {
       return HMAC_MD5;
     }
 
@@ -215,7 +221,10 @@ public class TSIG {
     throw new IllegalArgumentException("Unknown algorithm: " + name);
   }
 
-  /** The default fudge value for outgoing packets. Can be overridden by the tsigfudge option. */
+  /**
+   * The default fudge value for outgoing packets. Can be overridden by the {@code tsigfudge} {@link
+   * Options option}.
+   */
   public static final Duration FUDGE = Duration.ofSeconds(300);
 
   private final Name alg;
@@ -439,7 +448,7 @@ public class TSIG {
    * Generates a TSIG record with a specific error for a message that has been rendered.
    *
    * @param m The message
-   * @param b The rendered message
+   * @param b The rendered message. Implementations are allowed to modify the contents.
    * @param error The error
    * @param old If this message is a response, the TSIG from the request
    * @return The TSIG record to be added to the message
@@ -452,13 +461,13 @@ public class TSIG {
    * Generates a TSIG record with a specific error for a message that has been rendered.
    *
    * @param m The message
-   * @param b The rendered message
+   * @param b The rendered message. Implementations are allowed to modify the contents.
    * @param error The error
    * @param old If this message is a response, the TSIG from the request
-   * @param fullSignature {@code true} if this {@link TSIGRecord} is the to be added to the first of
-   *     many messages in a TCP connection and all TSIG variables (rfc2845, 3.4.2.) should be
+   * @param fullSignature {@code true} if this {@link TSIGRecord} is to be added to the first of
+   *     many messages in a TCP connection and all TSIG variables (rfc8945, 4.3.3) should be
    *     included in the signature. {@code false} for subsequent messages with reduced TSIG
-   *     variables set (rfc2845, 4.4.).
+   *     variables set (rfc8945, 5.3.1).
    * @return The TSIG record to be added to the message
    * @since 3.2
    */
@@ -479,10 +488,10 @@ public class TSIG {
    * @param b The rendered message
    * @param error The error
    * @param old If this message is a response, the TSIG from the request
-   * @param fullSignature {@code true} if this {@link TSIGRecord} is the to be added to the first of
-   *     many messages in a TCP connection and all TSIG variables (rfc2845, 3.4.2.) should be
+   * @param fullSignature {@code true} if this {@link TSIGRecord} is to be added to the first of
+   *     many messages in a TCP connection and all TSIG variables (rfc8945, 4.3.3) should be
    *     included in the signature. {@code false} for subsequent messages with reduced TSIG
-   *     variables set (rfc2845, 4.4.).
+   *     variables set (rfc8945, 5.3.1).
    * @param hmac A mac instance to reuse for a stream of messages to sign, e.g. when doing a zone
    *     transfer.
    * @return The TSIG record to be added to the message
@@ -493,8 +502,14 @@ public class TSIG {
     Duration fudge = getTsigFudge();
 
     boolean signing = hmac != null;
+    int messageID = m.getHeader().getID();
     if (old != null && signing) {
       hmacAddSignature(hmac, old);
+
+      // rfc8945, 4.3.2: Use the original ID to sign replies
+      messageID = old.getOriginalID();
+      b[0] = (byte) ((messageID >>> 8) & 0xFF);
+      b[1] = (byte) (messageID & 0xFF);
     }
 
     // Digest the message
@@ -505,8 +520,8 @@ public class TSIG {
       hmac.update(b);
     }
 
-    // rfc2845, 3.4.2 TSIG Variables
-    // for section 4.4 TSIG on TCP connection: skip name, class, ttl, alg and other
+    // rfc8945, 4.3.3 TSIG Variables
+    // for section 5.3.1 TSIG on TCP connection: skip name, class, ttl, alg and other
     DNSOutput out = new DNSOutput();
     if (fullSignature) {
       name.toWireCanonical(out);
@@ -543,16 +558,7 @@ public class TSIG {
     }
 
     return new TSIGRecord(
-        name,
-        DClass.ANY,
-        0,
-        alg,
-        timeSigned,
-        fudge,
-        signature,
-        m.getHeader().getID(),
-        error,
-        other);
+        name, DClass.ANY, 0, alg, timeSigned, fudge, signature, messageID, error, other);
   }
 
   private Instant getTimeSigned(int error, TSIGRecord old) {
@@ -591,8 +597,8 @@ public class TSIG {
    * @param m The message
    * @param old If this message is a response, the TSIG from the request
    * @param fullSignature {@code true} if this message is the first of many in a TCP connection and
-   *     all TSIG variables (rfc2845, 3.4.2.) should be included in the signature. {@code false} for
-   *     subsequent messages with reduced TSIG variables set (rfc2845, 4.4.).
+   *     all TSIG variables (rfc8945, 4.3.3) should be included in the signature. {@code false} for
+   *     subsequent messages with reduced TSIG variables set (rfc8945, 5.3.1).
    * @since 3.2
    */
   public void apply(Message m, TSIGRecord old, boolean fullSignature) {
@@ -606,8 +612,8 @@ public class TSIG {
    * @param error The error
    * @param old If this message is a response, the TSIG from the request
    * @param fullSignature {@code true} if this message is the first of many in a TCP connection and
-   *     all TSIG variables (rfc2845, 3.4.2.) should be included in the signature. {@code false} for
-   *     subsequent messages with reduced TSIG variables set (rfc2845, 4.4.).
+   *     all TSIG variables (rfc8945, 4.3.3) should be included in the signature. {@code false} for
+   *     subsequent messages with reduced TSIG variables set (rfc8945, 5.3.1).
    * @since 3.2
    */
   public void apply(Message m, int error, TSIGRecord old, boolean fullSignature) {
@@ -622,8 +628,8 @@ public class TSIG {
    * @param m The message
    * @param old If this message is a response, the TSIG from the request
    * @param fullSignature {@code true} if this message is the first of many in a TCP connection and
-   *     all TSIG variables (rfc2845, 3.4.2.) should be included in the signature. {@code false} for
-   *     subsequent messages with reduced TSIG variables set (rfc2845, 4.4.).
+   *     all TSIG variables (rfc8945, 4.3.3) should be included in the signature. {@code false} for
+   *     subsequent messages with reduced TSIG variables set (rfc8945, 5.3.1).
    * @deprecated use {@link #apply(Message, TSIGRecord, boolean)}
    */
   @Deprecated
@@ -685,8 +691,8 @@ public class TSIG {
    *     the same name compression).
    * @param requestTSIG If this message is a response, the TSIG from the request
    * @param fullSignature {@code true} if this message is the first of many in a TCP connection and
-   *     all TSIG variables (rfc2845, 3.4.2.) should be included in the signature. {@code false} for
-   *     subsequent messages with reduced TSIG variables set (rfc2845, 4.4.).
+   *     all TSIG variables (rfc8945, 4.3.3) should be included in the signature. {@code false} for
+   *     subsequent messages with reduced TSIG variables set (rfc8945, 5.3.1).
    * @return The result of the verification (as an Rcode)
    * @see Rcode
    * @since 3.2
@@ -706,8 +712,8 @@ public class TSIG {
    *     the same name compression).
    * @param requestTSIG If this message is a response, the TSIG from the request
    * @param fullSignature {@code true} if this message is the first of many in a TCP connection and
-   *     all TSIG variables (rfc2845, 3.4.2.) should be included in the signature. {@code false} for
-   *     subsequent messages with reduced TSIG variables set (rfc2845, 4.4.).
+   *     all TSIG variables (rfc8945, 4.3.3) should be included in the signature. {@code false} for
+   *     subsequent messages with reduced TSIG variables set (rfc8945, 5.3.1).
    * @return The result of the verification (as an Rcode)
    * @see Rcode
    */
@@ -738,19 +744,26 @@ public class TSIG {
       hmacAddSignature(hmac, requestTSIG);
     }
 
-    m.getHeader().decCount(Section.ADDITIONAL);
-    byte[] header = m.getHeader().toWire();
-    m.getHeader().incCount(Section.ADDITIONAL);
-    if (log.isTraceEnabled()) {
-      log.trace(hexdump.dump("TSIG-HMAC header", header));
+    Header header = m.getHeader().clone();
+    header.decCount(Section.ADDITIONAL);
+    if (tsig.getOriginalID() != header.getID()) {
+      log.debug(
+          "Using original TSIG message ID {} instead of {}", tsig.getOriginalID(), header.getID());
+      header.setID(tsig.getOriginalID());
     }
-    hmac.update(header);
 
-    int len = m.tsigstart - header.length;
+    byte[] headerBytes = header.toWire();
     if (log.isTraceEnabled()) {
-      log.trace(hexdump.dump("TSIG-HMAC message after header", messageBytes, header.length, len));
+      log.trace(hexdump.dump("TSIG-HMAC header", headerBytes));
     }
-    hmac.update(messageBytes, header.length, len);
+    hmac.update(headerBytes);
+
+    int len = m.tsigstart - headerBytes.length;
+    if (log.isTraceEnabled()) {
+      log.trace(
+          hexdump.dump("TSIG-HMAC message after header", messageBytes, headerBytes.length, len));
+    }
+    hmac.update(messageBytes, headerBytes.length, len);
 
     byte[] tsigVariables = getTsigVariables(fullSignature, tsig);
     hmac.update(tsigVariables);
@@ -801,9 +814,9 @@ public class TSIG {
   private int verifySignature(Mac hmac, byte[] signature) {
     int digestLength = hmac.getMacLength();
 
-    // rfc4635#section-3.1, 4.:
-    // "MAC size" field is less than the larger of 10 (octets) and half
-    // the length of the hash function in use
+    // rfc8945, 5.2.2.1
+    // If the "MAC size" field is less than the larger of 10 (octets) and half the length of the
+    // hash function in use
     int minDigestLength = Math.max(10, digestLength / 2);
     if (signature.length > digestLength) {
       log.debug(
@@ -1035,7 +1048,7 @@ public class TSIG {
           return result;
         } else {
           errorMessage = "missing required signature on first message";
-          log.debug(warningPrefix, errorMessage);
+          log.trace(warningPrefix, errorMessage);
           message.tsigState = Message.TSIG_FAILED;
           return Rcode.FORMERR;
         }
@@ -1050,17 +1063,17 @@ public class TSIG {
         boolean required = nresponses - lastsigned >= 100;
         if (required) {
           errorMessage = "Missing required signature on message #" + nresponses;
-          log.debug(warningPrefix, errorMessage);
+          log.trace(warningPrefix, errorMessage);
           message.tsigState = Message.TSIG_FAILED;
           return Rcode.FORMERR;
         } else if (isLastMessage) {
           errorMessage = "Missing required signature on last message";
-          log.debug(warningPrefix, errorMessage);
+          log.trace(warningPrefix, errorMessage);
           message.tsigState = Message.TSIG_FAILED;
           return Rcode.FORMERR;
         } else {
           errorMessage = "Intermediate message #" + nresponses + " without signature";
-          log.debug(warningPrefix, errorMessage);
+          log.trace(warningPrefix, errorMessage);
           addUnsignedMessageToMac(message, messageBytes, sharedHmac);
           return Rcode.NOERROR;
         }

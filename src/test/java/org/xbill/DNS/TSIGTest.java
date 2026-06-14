@@ -35,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import javax.crypto.spec.SecretKeySpec;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -46,6 +47,7 @@ import org.xbill.DNS.io.TcpIoClient;
 import org.xbill.DNS.io.UdpIoClient;
 import org.xbill.DNS.utils.base64;
 
+@Slf4j
 class TSIGTest {
   private final TSIG defaultKey = new TSIG(TSIG.HMAC_SHA256, "example.", "12345678");
 
@@ -218,6 +220,41 @@ class TSIGTest {
     Record answer = Record.fromString(qname, Type.A, DClass.IN, 300, "1.2.3.4", null);
     response.addRecord(answer, Section.ANSWER);
     byte[] rbytes = response.toWire(Message.MAXLENGTH);
+
+    Message rparsed = new Message(rbytes);
+    int result = defaultKey.verify(rparsed, rbytes, query.getGeneratedTSIG());
+    assertEquals(Rcode.NOERROR, result);
+    assertTrue(rparsed.isSigned());
+    assertTrue(rparsed.isVerified());
+  }
+
+  @Test
+  void signedQuerySignedResponseViaForwarder() throws IOException {
+    Name qname = Name.fromString("www.example.");
+    Record question = Record.newRecord(qname, Type.A, DClass.IN);
+    Message query = Message.newQuery(question);
+    query.setTSIG(defaultKey);
+
+    // Force tsig-generation
+    query.toWire(Message.MAXLENGTH);
+    int originalQueryId = query.getHeader().getID();
+    query.getHeader().setID(new Header().getID());
+    log.debug(
+        "query: id={}, original id={}",
+        query.getHeader().getID(),
+        query.getGeneratedTSIG().getOriginalID());
+
+    Message response = new Message(query.getHeader().getID());
+    response.setTSIG(defaultKey, Rcode.NOERROR, query.getGeneratedTSIG());
+    response.getHeader().setFlag(Flags.QR);
+    response.addRecord(question, Section.QUESTION);
+    Record answer = Record.fromString(qname, Type.A, DClass.IN, 300, "1.2.3.4", null);
+    response.addRecord(answer, Section.ANSWER);
+    byte[] rbytes = response.toWire(Message.MAXLENGTH);
+    log.debug(
+        "response: id={}, original id={}",
+        response.getHeader().getID(),
+        response.getGeneratedTSIG().getOriginalID());
 
     Message rparsed = new Message(rbytes);
     int result = defaultKey.verify(rparsed, rbytes, query.getGeneratedTSIG());
