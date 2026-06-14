@@ -9,8 +9,10 @@ import java.time.Duration;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
+@Slf4j
 class ResolverTest {
   @Test
   @SuppressWarnings("deprecation")
@@ -31,7 +33,6 @@ class ResolverTest {
           @Override
           public void receiveMessage(Object id, Message m) {
             fail("Received message (should not happen)");
-            latch.countDown();
           }
 
           @Override
@@ -42,6 +43,8 @@ class ResolverTest {
           }
         });
 
-    latch.await(5, TimeUnit.SECONDS);
+    assertThat(latch.await(5, TimeUnit.SECONDS))
+        .withFailMessage("timeout instead of failing")
+        .isTrue();
   }
 }

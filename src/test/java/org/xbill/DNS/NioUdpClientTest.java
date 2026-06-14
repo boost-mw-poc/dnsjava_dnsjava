@@ -30,6 +30,8 @@ import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import org.xbill.DNS.io.DefaultIoClientFactory;
+import org.xbill.DNS.io.UdpIoClient;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings("unchecked")
@@ -65,7 +67,7 @@ class NioUdpClientTest {
   }
 
   private CompletableFuture<byte[]> createAndSendQuery() {
-    NioUdpClient udp = new NioUdpClient();
+    UdpIoClient udp = new DefaultIoClientFactory().createOrGetUdpClient();
     Message query = Message.newQuery(Record.newRecord(Name.root, Type.A, DClass.IN));
     return udp.sendAndReceiveUdp(
         null,
