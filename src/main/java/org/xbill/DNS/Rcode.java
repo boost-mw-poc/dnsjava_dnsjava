@@ -11,19 +11,19 @@ package org.xbill.DNS;
 public final class Rcode {
   private static final Mnemonic rcodes = new Mnemonic("DNS Rcode", Mnemonic.CASE_UPPER);
 
-  /** No error */
+  /** No Error. */
   public static final int NOERROR = 0;
 
-  /** Format error */
+  /** Format Error. */
   public static final int FORMERR = 1;
 
-  /** Server failure */
+  /** Server Failure. */
   public static final int SERVFAIL = 2;
 
-  /** The name does not exist */
+  /** Non-Existent Domain. */
   public static final int NXDOMAIN = 3;
 
-  /** The operation requested is not implemented */
+  /** Not Implemented. */
   public static final int NOTIMP = 4;
 
   /**
@@ -33,51 +33,130 @@ public final class Rcode {
    */
   @Deprecated public static final int NOTIMPL = 4;
 
-  /** The operation was refused by the server */
+  /** Query Refused. */
   public static final int REFUSED = 5;
 
-  /** The name exists */
+  /**
+   * Name Exists when it should not.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc2136">RFC 2136: Dynamic Updates in the
+   *     Domain Name System (DNS UPDATE)</a>
+   */
   public static final int YXDOMAIN = 6;
 
-  /** The RRset (name, type) exists */
+  /**
+   * RR Set Exists when it should not.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc2136">RFC 2136: Dynamic Updates in the
+   *     Domain Name System (DNS UPDATE)</a>
+   */
   public static final int YXRRSET = 7;
 
-  /** The RRset (name, type) does not exist */
+  /**
+   * The RR Set that should exist does not.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc2136">RFC 2136: Dynamic Updates in the
+   *     Domain Name System (DNS UPDATE)</a>
+   */
   public static final int NXRRSET = 8;
 
-  /** The requestor is not authorized to perform this operation */
+  /**
+   * Server Not Authoritative for zone (RFC 2136); Not Authorized (RFC 8945).
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc2136">RFC 2136: Dynamic Updates in the
+   *     Domain Name System (DNS UPDATE)</a>
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc8945">RFC 8945: Secret Key Transaction
+   *     Authentication for DNS (TSIG)</a>
+   */
   public static final int NOTAUTH = 9;
 
-  /** The zone specified is not a zone */
+  /**
+   * Name not contained in zone.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc2136">RFC 2136: Dynamic Updates in the
+   *     Domain Name System (DNS UPDATE)</a>
+   */
   public static final int NOTZONE = 10;
 
-  /* EDNS extended rcodes */
-  /** Unsupported EDNS level */
+  /**
+   * DSO-TYPE Not Implemented.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc8490">RFC 8490: DNS Stateful
+   *     Operations</a>
+   * @since 3.6.6
+   */
+  public static final int DSOTYPENI = 11;
+
+  /**
+   * Bad OPT Version.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc6891">RFC 6891: Extension Mechanisms for
+   *     DNS (EDNS(0))</a>
+   */
   public static final int BADVERS = 16;
 
-  /* TSIG/TKEY only rcodes */
-  /** The signature is invalid (TSIG/TKEY extended error) */
+  /**
+   * TSIG Signature Failure.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc8945">RFC 8945: Secret Key Transaction
+   *     Authentication for DNS (TSIG)</a>
+   */
   public static final int BADSIG = 16;
 
-  /** The key is invalid (TSIG/TKEY extended error) */
+  /**
+   * Key not recognized.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc8945">RFC 8945: Secret Key Transaction
+   *     Authentication for DNS (TSIG)</a>
+   */
   public static final int BADKEY = 17;
 
-  /** The time is out of range (TSIG/TKEY extended error) */
+  /**
+   * Signature out of time window.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc8945">RFC 8945: Secret Key Transaction
+   *     Authentication for DNS (TSIG)</a>
+   */
   public static final int BADTIME = 18;
 
-  /** The mode is invalid (TKEY extended error) */
+  /**
+   * Bad TKEY Mode.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc2930">RFC 2930: Secret Key Establishment
+   *     for DNS (TKEY RR)</a>
+   */
   public static final int BADMODE = 19;
 
-  /** Duplicate key name (TKEY extended error) */
+  /**
+   * Duplicate key name.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc2930">RFC 2930: Secret Key Establishment
+   *     for DNS (TKEY RR)</a>
+   */
   public static final int BADNAME = 20;
 
-  /** Algorithm not supported (TKEY extended error) */
+  /**
+   * Algorithm not supported.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc2930">RFC 2930: Secret Key Establishment
+   *     for DNS (TKEY RR)</a>
+   */
   public static final int BADALG = 21;
 
-  /** Bad truncation (RFC 4635) */
+  /**
+   * Bad Truncation.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc8945">RFC 8945: Secret Key Transaction
+   *     Authentication for DNS (TSIG)</a>
+   */
   public static final int BADTRUNC = 22;
 
-  /** Bad or missing server cookie (RFC 7873) */
+  /**
+   * Bad/missing server cookie.
+   *
+   * @see <a href="https://datatracker.ietf.org/doc/html/rfc7873">RFC 7873: Domain Name System (DNS)
+   *     Cookies</a>
+   */
   public static final int BADCOOKIE = 23;
 
   static {
@@ -97,6 +176,7 @@ public final class Rcode {
     rcodes.add(NXRRSET, "NXRRSET");
     rcodes.add(NOTAUTH, "NOTAUTH");
     rcodes.add(NOTZONE, "NOTZONE");
+    rcodes.add(DSOTYPENI, "DSOTYPENI");
     rcodes.add(BADVERS, "BADVERS");
     rcodes.add(BADKEY, "BADKEY");
     rcodes.add(BADTIME, "BADTIME");
